@@ -1,4 +1,4 @@
-# Simulador de Automatos Finitos e Gramaticas Formais
+# Automatos Finitos e Gramaticas Formais
 Este trabalho, desenvolvido para a disciplina de Teoria da Computação, implementa um software educacional que demonstra conceitos da Teoria da Computação através da criação e manipulação de Autômatos Finitos (AFD e AFND), conversão entre eles, minimização, e operações com Gramáticas Formais, oferecendo uma ferramenta interativa para visualização passo a passo dos algoritmos.
 
 ## Sobre o projeto 
