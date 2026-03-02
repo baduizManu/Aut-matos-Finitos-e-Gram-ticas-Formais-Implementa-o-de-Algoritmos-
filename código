@@ -1,8 +1,15 @@
+# Trabalho de Teoria da Computação: Autômatos AFD AFND e GRAMÁTICAS GR GLC
+#Discentes: Manuela Ferreira Gutemberg e Vinicius dos Santos Ferreira
+
+
+#Parte de autômatos
+
+#Não Deterministicos
 class AFND:
     def __init__(self, alfabeto, estados, transicoes, estado_inicial, estados_finais):
         self.alfabeto = alfabeto
         self.estados = estados
-        self.transicoes = transicoes  
+        self.transicoes = transicoes
         self.estado_inicial = estado_inicial
         self.estados_finais = estados_finais
 
@@ -29,53 +36,70 @@ class AFND:
         return fecho
 
     def converter_para_afd(self):
-        print("\nIniciando conversão de AFND para AFD...")
-        novo_inicial = frozenset(self.fecho_epsilon([self.estado_inicial]))
-        estados_afd = [novo_inicial]
-        transicoes_afd = {}
-        estados_finais_afd = []
-        if any(estado in self.estados_finais for estado in novo_inicial):
-            estados_finais_afd.append(novo_inicial)
-        fila = [novo_inicial]
-        processados = set()
-        while fila:
-            conjunto_atual = fila.pop(0)
-            if conjunto_atual in processados:
-                continue
-            processados.add(conjunto_atual)
-            for simbolo in self.alfabeto:
-                if simbolo == 'e':
-                    continue
-                destinos = set()
-                for estado in conjunto_atual:
-                    destinos.update(self.transicoes.get((estado, simbolo), []))
-                if not destinos:
-                    continue
-                novo_conjunto = frozenset(self.fecho_epsilon(destinos))
-                transicoes_afd[(conjunto_atual, simbolo)] = novo_conjunto
-                if novo_conjunto not in estados_afd:
-                    estados_afd.append(novo_conjunto)
-                    fila.append(novo_conjunto)
-                if any(estado in self.estados_finais for estado in novo_conjunto):
-                    if novo_conjunto not in estados_finais_afd:
-                        estados_finais_afd.append(novo_conjunto)
-        mapeamento = {conjunto: f'q{i}' for i, conjunto in enumerate(estados_afd)}
-        novas_transicoes = {}
-        for (conjunto, simbolo), destino in transicoes_afd.items():
-            novas_transicoes[(mapeamento[conjunto], simbolo)] = mapeamento[destino]
-        novos_estados = [mapeamento[conjunto] for conjunto in estados_afd]
-        novo_estado_inicial = mapeamento[novo_inicial]
-        novos_estados_finais = [mapeamento[conjunto] for conjunto in estados_finais_afd]
-        print("\nConversão concluída com sucesso!")
-        print(f"Estados do AFD: {novos_estados}")
-        print(f"Estado inicial: {novo_estado_inicial}")
-        print(f"Estados finais: {novos_estados_finais}")
-        print("Transições:")
-        for (origem, simbolo), destino in novas_transicoes.items():
-            print(f"  {origem} --{simbolo}--> {destino}")
-        return AFD(self.alfabeto, novos_estados, novas_transicoes, novo_estado_inicial, novos_estados_finais)
+      print("\nIniciando conversão de AFND para AFD...")
 
+      novo_inicial = frozenset(self.fecho_epsilon({self.estado_inicial}))
 
+      estados_afd = set([novo_inicial])
+      transicoes_afd = {}
+      estados_finais_afd = set()
+
+      if any(e in self.estados_finais for e in novo_inicial):
+          estados_finais_afd.add(novo_inicial)
+
+      fila = [novo_inicial]
+
+      while fila:
+          conjunto_atual = fila.pop(0)
+
+          for simbolo in self.alfabeto:
+              if simbolo == 'e':
+                  continue
+
+              destinos = set()
+              for estado in conjunto_atual:
+                  destinos.update(self.transicoes.get((estado, simbolo), []))
+
+              # Mesmo que não tenha destino, cria conjunto vazio
+              novo_conjunto = frozenset(self.fecho_epsilon(destinos))
+
+              transicoes_afd[(conjunto_atual, simbolo)] = novo_conjunto
+
+              if novo_conjunto not in estados_afd:
+                  estados_afd.add(novo_conjunto)
+                  fila.append(novo_conjunto)
+
+                  if any(e in self.estados_finais for e in novo_conjunto):
+                      estados_finais_afd.add(novo_conjunto)
+
+      # Mapear conjuntos para nomes simples
+      mapeamento = {conjunto: f'q{i}' for i, conjunto in enumerate(estados_afd)}
+
+      novas_transicoes = {}
+      for (origem, simbolo), destino in transicoes_afd.items():
+          novas_transicoes[(mapeamento[origem], simbolo)] = mapeamento[destino]
+
+      novos_estados = [mapeamento[c] for c in estados_afd]
+      novo_estado_inicial = mapeamento[novo_inicial]
+      novos_estados_finais = [mapeamento[c] for c in estados_finais_afd]
+
+      print("\nConversão concluída com sucesso!")
+      print(f"Estados do AFD: {novos_estados}")
+      print(f"Estado inicial: {novo_estado_inicial}")
+      print(f"Estados finais: {novos_estados_finais}")
+      print("Transições:")
+      for (origem, simbolo), destino in novas_transicoes.items():
+          print(f"  {origem} --{simbolo}--> {destino}")
+
+      return AFD(
+          [s for s in self.alfabeto if s != 'e'],
+          novos_estados,
+          novas_transicoes,
+          novo_estado_inicial,
+          novos_estados_finais
+      )
+
+#Deterministicos
 class AFD:
     def __init__(self, alfabeto, estados, transicoes, estado_inicial, estados_finais):
         self.alfabeto = alfabeto
@@ -224,10 +248,10 @@ def criar_afnd():
     transicoes = {}
     print("Defina as transições (no formato 'estado atual símbolo estados seguintes'):")
     print("Exemplo: q0 a q1 q2 (para transições não determinísticas)")
-    print("Para epsilon transições, use e como símbolo")
+    print("Para epsilon, use 'e' como símbolo")
     while True:
-        entrada = input("Transição (ou 'done' para finalizar): ")
-        if entrada == "done":
+        entrada = input("Transição (ou 'fim' para finalizar): ")
+        if entrada == "fim":
             break
         partes = entrada.split()
         estado_atual = partes[0]
@@ -245,39 +269,36 @@ def criar_afd():
     transicoes = {}
     print("Defina as transições (no formato 'estado atual símbolo estado seguinte'):")
     while True:
-        entrada = input("Transição (ou 'done' para finalizar): ")
-        if entrada == "done":
+        entrada = input("Transição (ou 'fim' para finalizar): ")
+        if entrada == "fim":
             break
         estado_atual, simbolo, proximo_estado = entrada.split()
         transicoes[(estado_atual, simbolo)] = proximo_estado
     return AFD(alfabeto, estados, transicoes, estado_inicial, estados_finais)
 
 
+#Partes das Gramáticas:
 
 class Gramatica:
     def __init__(self, nao_terminais, terminais, producoes, inicial):
         self.N = set(nao_terminais)
         self.T = set(terminais)
-        self.producoes = producoes  
+        self.producoes = producoes  # dicionário: não-terminal -> lista de produções (cada produção é uma lista de símbolos)
         self.S = inicial
 
     def __str__(self):
         s = f"N = {self.N}\nT = {self.T}\nP = {{\n"
         for A in self.producoes:
             for prod in self.producoes[A]:
-                s += f"  {A} -> {' '.join(prod) if prod != ['ε'] else 'ε'}\n"
+                s += f"  {A} -> {' '.join(prod) if prod != ['e'] else 'e'}\n"
         s += f"}}\nS = {self.S}"
         return s
 
     def classificar(self):
-        """
-        Retorna 'regular' se a gramática for regular (linear à direita) ou 'livre contexto' caso contrário.
-        Considera regras da forma A -> a B ou A -> a (ou A -> ε) como regulares.
-        """
         for A in self.producoes:
             for prod in self.producoes[A]:
-                if prod == ['ε']:
-                    continue  
+                if prod == ['e']:
+                    continue
                 if len(prod) > 2:
                     return "livre contexto"
                 if len(prod) == 2:
@@ -289,10 +310,6 @@ class Gramatica:
         return "regular"
 
     def converter_para_afd(self):
-        """
-        Converte uma gramática regular (linear à direita) para AFD.
-        Retorna um objeto AFD.
-        """
         estados = list(self.N) + ['F']
         estado_inicial = self.S
         estados_finais = []
@@ -300,7 +317,7 @@ class Gramatica:
 
         for A in self.producoes:
             for prod in self.producoes[A]:
-                if prod == ['ε']:
+                if prod == ['e']:
                     if A not in estados_finais:
                         estados_finais.append(A)
                 elif len(prod) == 1:
@@ -325,7 +342,6 @@ class Gramatica:
 
     def eliminar_epsilon(self):
         print("\nPasso 1: Eliminando produções vazias (ε)...")
-        
         anulaveis = set()
         mudou = True
         while mudou:
@@ -334,19 +350,18 @@ class Gramatica:
                 if A in anulaveis:
                     continue
                 for prod in self.producoes.get(A, []):
-                    if prod == ['ε'] or all(sim in anulaveis for sim in prod):
+                    if prod == ['e'] or all(sim in anulaveis for sim in prod):
                         anulaveis.add(A)
                         mudou = True
                         print(f"  {A} é anulável")
                         break
 
-       
         novas_producoes = {A: [] for A in self.producoes}
         for A in self.producoes:
             for prod in self.producoes[A]:
-                if prod == ['ε']:
+                if prod == ['e']:
                     continue
-                
+
                 pos_anulaveis = [i for i, sim in enumerate(prod) if sim in anulaveis]
                 from itertools import combinations
                 for r in range(len(pos_anulaveis) + 1):
@@ -355,22 +370,19 @@ class Gramatica:
                         if nova_prod:
                             if nova_prod not in novas_producoes[A]:
                                 novas_producoes[A].append(nova_prod)
-                       
         self.producoes = novas_producoes
 
-        
         if self.S in anulaveis:
             if self.S not in self.producoes:
                 self.producoes[self.S] = []
-            if ['ε'] not in self.producoes[self.S]:
-                self.producoes[self.S].append(['ε'])
+            if ['e'] not in self.producoes[self.S]:
+                self.producoes[self.S].append(['e'])
                 print(f"  Adicionado S -> ε porque S é anulável.")
 
         print("Produções vazias eliminadas (exceto possível S -> ε).")
 
     def eliminar_unitarias(self):
         print("\nPasso 2: Eliminando produções unitárias (A -> B)...")
-        
         fecho_unitario = {}
         for A in self.N:
             fecho = set()
@@ -385,7 +397,6 @@ class Gramatica:
                         fila.append(prod[0])
             fecho_unitario[A] = fecho
 
-        
         novas_producoes = {A: [] for A in self.N}
         for A in self.N:
             for B in fecho_unitario[A]:
@@ -399,7 +410,6 @@ class Gramatica:
 
     def eliminar_inuteis(self):
         print("\nPasso 3: Eliminando símbolos inúteis...")
-        
         geradores = set()
         mudou = True
         while mudou:
@@ -408,7 +418,7 @@ class Gramatica:
                 if A in geradores:
                     continue
                 for prod in self.producoes.get(A, []):
-                    if prod == ['ε'] or all(sim in self.T or sim in geradores for sim in prod):
+                    if prod == ['e'] or all(sim in self.T or sim in geradores for sim in prod):
                         geradores.add(A)
                         mudou = True
                         print(f"  {A} é gerador")
@@ -419,8 +429,6 @@ class Gramatica:
             print(f"  Removendo não-terminal não gerador: {A}")
             del self.producoes[A]
         self.N = geradores
-
-       
         alcancaveis = set()
         fila = [self.S]
         while fila:
@@ -442,13 +450,8 @@ class Gramatica:
         print("Símbolos inúteis eliminados.")
 
     def derivar(self, palavra, max_profundidade=100):
-        """
-        Tenta derivar a palavra a partir da gramática usando backtracking.
-        Retorna uma lista de passos (strings) ou None.
-        """
         print(f"\nTentando derivar '{palavra}'...")
-       
-        alvo = list(palavra)  
+        alvo = list(palavra)
         derivacao = []
         if self._derivar_rec([self.S], alvo, derivacao, max_profundidade):
             print("Derivação encontrada:")
@@ -466,12 +469,10 @@ class Gramatica:
             return True
         if len(atual) > len(alvo):
             return False
-
-    
         for i, sim in enumerate(atual):
             if sim in self.N:
                 for prod in self.producoes.get(sim, []):
-                    if prod == ['ε']:
+                    if prod == ['e']:
                         nova = atual[:i] + atual[i+1:]
                     else:
                         nova = atual[:i] + prod + atual[i+1:]
@@ -518,7 +519,6 @@ class Gramatica:
             texto += "  Iniciar com S(). Se retornar True e toda a palavra foi consumida, aceitar.\n"
         return texto
 
-
 def criar_gramatica():
     print("\nDefinição da Gramática:")
     nao_terminais = input("Digite os não-terminais (separados por espaço): ").split()
@@ -526,10 +526,10 @@ def criar_gramatica():
     inicial = input("Digite o símbolo inicial: ")
     producoes = {}
     print("Defina as produções. Para cada produção, digite no formato: 'A -> simb1 simb2 ...'")
-    print("Use 'ε' para representar vazio. Digite 'done' quando terminar.")
+    print("Use 'e' para representar vazio. Digite 'fim' quando terminar.")
     while True:
         entrada = input("Produção: ")
-        if entrada == "done":
+        if entrada == "fim":
             break
         if "->" not in entrada:
             print("Formato inválido. Use A -> simb1 simb2 ...")
@@ -537,8 +537,8 @@ def criar_gramatica():
         esquerda, direita = entrada.split("->")
         esquerda = esquerda.strip()
         direita = direita.strip()
-        if direita == 'ε':
-            prod = ['ε']
+        if direita == 'e':
+            prod = ['e']
         else:
             prod = direita.split()
         if esquerda not in producoes:
@@ -547,6 +547,7 @@ def criar_gramatica():
     return Gramatica(nao_terminais, terminais, producoes, inicial)
 
 
+# Parte dos menus
 def main():
     while True:
         print("\n" + "="*50)
@@ -570,7 +571,7 @@ def main():
 
 
 def submenu_automatos():
-    print("\n--- AUTÔMATOS ---")
+    print("\n<<< AUTÔMATOS >>>")
     print("Escolha o tipo de autômato:")
     print("1 - Autômato Finito Determinístico (AFD)")
     print("2 - Autômato Finito Não Determinístico (AFND)")
@@ -593,7 +594,7 @@ def submenu_automatos():
         print("Opção inválida.")
         return
 
-    print("\n--- MINIMIZAÇÃO DO AFD ---")
+    print("\n<<< MINIMIZAÇÃO DO AFD >>>")
     tabela = afd.minimizar()
     if isinstance(tabela, str):
         print(tabela)
@@ -608,7 +609,7 @@ def submenu_automatos():
 
 
 def submenu_gramaticas():
-    print("\n--- GRAMÁTICAS ---")
+    print("\n<<< GRAMÁTICAS >>>")
     gram = criar_gramatica()
     print("\nGramática fornecida:")
     print(gram)
