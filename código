@@ -91,12 +91,7 @@ class AFND:
       for (origem, simbolo), destino in novas_transicoes.items():
           print(f"  {origem} --{simbolo}--> {destino}")
 
-      return AFD(
-          [s for s in self.alfabeto if s != 'e'],
-          novos_estados,
-          novas_transicoes,
-          novo_estado_inicial,
-          novos_estados_finais
+      return AFD( [s for s in self.alfabeto if s != 'e'], novos_estados, novas_transicoes, novo_estado_inicial, novos_estados_finais
       )
 
 #Deterministicos
@@ -310,28 +305,44 @@ class Gramatica:
         return "regular"
 
     def converter_para_afd(self):
-        estados = list(self.N) + ['F']
-        estado_inicial = self.S
-        estados_finais = []
-        transicoes = {}
+      estados = set(self.N)
+      estado_inicial = self.S
+      estados_finais = set()
+      transicoes = {}
 
-        for A in self.producoes:
-            for prod in self.producoes[A]:
-                if prod == ['e']:
-                    if A not in estados_finais:
-                        estados_finais.append(A)
-                elif len(prod) == 1:
-                    a = prod[0]
-                    transicoes[(A, a)] = 'F'
-                    if 'F' not in estados_finais:
-                        estados_finais.append('F')
-                elif len(prod) == 2:
-                    a = prod[0]
-                    B = prod[1]
-                    transicoes[(A, a)] = B
+      usar_estado_final_extra = False
+      estado_final_extra = 'F'
 
-        alfabeto = list(self.T)
-        return AFD(alfabeto, estados, transicoes, estado_inicial, estados_finais)
+      for A, lista_producoes in self.producoes.items():
+          for prod in lista_producoes:
+
+              # Caso A -> ε
+              if prod == ['e']:
+                  estados_finais.add(A)
+
+              # Caso A -> a
+              elif len(prod) == 1 and prod[0] in self.T:
+                  a = prod[0]
+                  transicoes[(A, a)] = estado_final_extra
+                  usar_estado_final_extra = True
+
+              # Caso A -> a B
+              elif len(prod) == 2:
+                  a, B = prod
+                  transicoes[(A, a)] = B
+
+      # Se precisou do estado final extra
+      if usar_estado_final_extra:
+          estados.add(estado_final_extra)
+          estados_finais.add(estado_final_extra)
+
+      return AFD(
+          list(self.T),
+          list(estados),
+          transicoes,
+          estado_inicial,
+          list(estados_finais)
+      )
 
     def simplificar(self):
         print("\nIniciando simplificação da gramática...")
@@ -550,9 +561,7 @@ def criar_gramatica():
 # Parte dos menus
 def main():
     while True:
-        print("\n" + "="*50)
-        print("PROJETO DE TEORIA DA COMPUTAÇÃO")
-        print("="*50)
+        print("\n <<< PROJETO DE TEORIA DA COMPUTAÇÃO >>> \n")
         print("Escolha uma opção:")
         print("1 - Trabalhar com Autômatos (AFD/AFND)")
         print("2 - Trabalhar com Gramáticas")
